@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maki's Journey to Hope</title>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            background-color: #87CEEB;
+        }
+        #menuScreen, #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+        }
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+        }
+        button {
+            font-size: 1.5em;
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="menuScreen">
+        <h1>Help Maki Get Hope</h1>
+        <button id="playButton">Play</button>
+    </div>
+    <div id="gameOverScreen" style="display: none;">
+        <h1>Game Over</h1>
+        <button id="retryButton">Retry</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menuScreen = document.getElementById('menuScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const playButton = document.getElementById('playButton');
+        const retryButton = document.getElementById('retryButton');
+
+        let gameRunning = false;
+        let maki, hope, obstacles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        class GameObject {
+            constructor(x, y, width, height, color, name) {
+                this.x = x;
+                this.y = y;
+                this.width = width;
+                this.height = height;
+                this.color = color;
+                this.name = name;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.fillText(this.name, this.x, this.y - 5);
+            }
+        }
+
+        function initGame() {
+            resizeCanvas();
+            maki = new GameObject(canvas.width / 2 - 25, canvas.height - 100, 50, 50, 'blue', 'Maki');
+            hope = new GameObject(canvas.width / 2 - 25, 50, 50, 50, 'green', 'Hope');
+            obstacles = [];
+            gameRunning = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Move and draw obstacles
+            obstacles.forEach((obstacle, index) => {
+                obstacle.y += 2;
+                if (obstacle.y > canvas.height) {
+                    obstacles.splice(index, 1);
+                } else {
+                    obstacle.draw();
+                    if (checkCollision(maki, obstacle)) {
+                        gameOver();
+                    }
+                }
+            });
+
+            // Spawn new obstacles
+            if (Math.random() < 0.02) {
+                const obstacleWidth = 50;
+                const x = Math.random() * (canvas.width - obstacleWidth);
+                obstacles.push(new GameObject(x, -50, obstacleWidth, 50, 'red', 'Jack'));
+            }
+
+            maki.draw();
+            hope.draw();
+
+            // Check if Maki reached Hope
+            if (checkCollision(maki, hope)) {
+                console.log("Level completed!");
+                // Here you can implement level completion logic
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function checkCollision(obj1, obj2) {
+            return obj1.x < obj2.x + obj2.width &&
+                   obj1.x + obj1.width > obj2.x &&
+                   obj1.y < obj2.y + obj2.height &&
+                   obj1.y + obj1.height > obj2.y;
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            gameOverScreen.style.display = 'flex';
+        }
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            maki.x = touch.clientX - maki.width / 2;
+            // Ensure Maki stays within the canvas
+            maki.x = Math.max(0, Math.min(canvas.width - maki.width, maki.x));
+        });
+
+        playButton.addEventListener('click', () => {
+            menuScreen.style.display = 'none';
+            initGame();
+        });
+
+        retryButton.addEventListener('click', () => {
+            gameOverScreen.style.display = 'none';
+            initGame();
+        });
+
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initial setup
+        resizeCanvas();
+    </script>
+</body>
+</html>
